@@ -63,11 +63,10 @@
 
 ;;==================Thumbnails===========
 (defn image-thumbnailize
-  [file filters outputs]
-  ;; file must be downloaded
+  [source-url filters outputs]
   ;; filters are an array of filter map, e.g. {:tag "crop"}
   ;; outputs are an array of output map, e.g. {:file "XXX.png" :height 128}
-  (let [args ["convert" (str file "[0]") "-auto-orient"]
+  (let [args ["convert" (str source-url "[0]") "-auto-orient"]
         args (reduce apply-filter args filters)
         args (conj args "+write" "mpr:IN" "-quality" "80" "-background" "#ffffff")
         args (reduce #(conj %1 "(" "mpr:IN" "-thumbnail" (str "x" (:height %2)) "-strip" "-write" (:file %2) ")") args outputs)
@@ -78,11 +77,10 @@
     (check-command-result exit out err)))
 
 (defn video-thumbnailize
-  [file time outputs]
-  ;; file can be a url
+  [source-url time outputs]
   ;; time should base on probed duration
   ;; outputs are an array of output map, e.g. {:file "XXX.png" :height 128}
-  (let [args ["ffmpeg" "-y" "-ss" (str time) "-i" file]
+  (let [args ["ffmpeg" "-y" "-ss" (str time) "-i" source-url]
         args (reduce #(conj %1 "-vframes" "1" "-filter:v" (str "scale=-1:" (:height %2)) (:file %2)) args outputs)
         _ (println "Start exec command..." args)
         {:keys [exit out err]} (apply shell/sh args)
