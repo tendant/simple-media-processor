@@ -6,7 +6,8 @@
 (defn- check-command-result [exit out err]
   (if (zero? exit)
     (log/debug "command success" out)
-    (log/error "command error" out err)))
+    (throw (ex-info "command error" {:out out
+                                     :err err}))))
 
 ;;==================Probe===============
 (defn- apply-crop [args {:keys [x y width height rotate]}]
