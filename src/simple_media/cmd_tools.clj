@@ -71,7 +71,7 @@
           args (reduce apply-filter args filters)
           args (conj args "+write" "mpr:IN" "-quality" "80" "-background" "#ffffff")
           args (reduce #(conj %1 "(" "mpr:IN" "-thumbnail" (str "x" (:height %2)) "-strip" "-write" (:file %2) ")") args outputs)
-          args (conj args "null:")
+          args (conj args "null:white")
           _ (log/debugf "Start exec command... %s" (apply str args))
           {:keys [exit out err]} (apply shell/sh args)
           _ (log/debug "Done exec command.")]
