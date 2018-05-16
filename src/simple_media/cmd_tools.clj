@@ -72,7 +72,7 @@
           args (conj args "+write" "mpr:IN" "-quality" "80" "-background" "#ffffff")
           args (reduce #(conj %1 "(" "mpr:IN" "-thumbnail" (str "x" (:height %2)) "-strip" "-write" (:file %2) ")") args outputs)
           args (conj args "null:white")
-          _ (log/debugf "Start exec command... %s" (apply str (interpose " " args)))
+          _ (log/debugf "Start exec command... %s" (clojure.string/join " " args))
           {:keys [exit out err]} (apply shell/sh args)
           _ (log/debug "Done exec command.")]
       (check-command-result exit out err))
@@ -85,7 +85,7 @@
   (if (every? (comp string? :file) outputs) 
     (let [args ["ffmpeg" "-y" "-ss" (str time) "-i" source-url]
           args (reduce #(conj %1 "-vframes" "1" "-filter:v" (str "scale=-1:" (:height %2)) (:file %2)) args outputs)
-          _ (log/debugf "Start exec command... %s" (apply str (interpose " " args)))
+          _ (log/debugf "Start exec command... %s" (clojure.string/join " " args))
           {:keys [exit out err]} (apply shell/sh args)
           _ (log/debug "Done exec command.")]
       (check-command-result exit out err))
@@ -118,7 +118,7 @@
                                                        "-threads" "1"])
                     (not (nil? audio-stream)) (concat ["-map" (str "0:" (:index audio-stream))] audio-opts)
                     true (concat ["-movflags" "+faststart" "-f" fmt output-file]))
-        _ (log/debugf "Start exec command... %s" (apply str (interpose " " cmd)))
+        _ (log/debugf "Start exec command... %s" (clojure.string/join " " cmd))
         {:keys [exit out err]} (apply shell/sh cmd)
         _ (log/debug "Done exec command.")]
     (check-command-result exit out err)))
