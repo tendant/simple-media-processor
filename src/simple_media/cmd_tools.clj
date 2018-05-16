@@ -65,27 +65,31 @@
 (defn image-thumbnailize
   [source-url filters outputs]
   ;; filters are an array of filter map, e.g. {:tag "crop"}
-  ;; outputs are an array of output map, e.g. {:file "XXX.png" :height 128}
-  (let [args ["convert" (str source-url "[0]") "-auto-orient"]
-        args (reduce apply-filter args filters)
-        args (conj args "+write" "mpr:IN" "-quality" "80" "-background" "#ffffff")
-        args (reduce #(conj %1 "(" "mpr:IN" "-thumbnail" (str "x" (:height %2)) "-strip" "-write" (:file %2) ")") args outputs)
-        args (conj args "null:")
-        _ (log/debugf "Start exec command... %s" (apply str args))
-        {:keys [exit out err]} (apply shell/sh args)
-        _ (log/debug "Done exec command.")]
-    (check-command-result exit out err)))
+  ;; outputs are an array of output map, e.g. {:file "XXX.png" :height 128} TODO(yangye): use clojure spec
+  (if (every? (comp string? :file) outputs)
+    (let [args ["convert" (str source-url "[0]") "-auto-orient"]
+          args (reduce apply-filter args filters)
+          args (conj args "+write" "mpr:IN" "-quality" "80" "-background" "#ffffff")
+          args (reduce #(conj %1 "(" "mpr:IN" "-thumbnail" (str "x" (:height %2)) "-strip" "-write" (:file %2) ")") args outputs)
+          args (conj args "null:")
+          _ (log/debugf "Start exec command... %s" (apply str args))
+          {:keys [exit out err]} (apply shell/sh args)
+          _ (log/debug "Done exec command.")]
+      (check-command-result exit out err))
+    (throw (ex-info "image-thumbnailize invalid outputs param: file is not string" {:outputs outputs}))))
 
 (defn video-thumbnailize
   [source-url time outputs]
   ;; time should base on probed duration
-  ;; outputs are an array of output map, e.g. {:file "XXX.png" :height 128}
-  (let [args ["ffmpeg" "-y" "-ss" (str time) "-i" source-url]
-        args (reduce #(conj %1 "-vframes" "1" "-filter:v" (str "scale=-1:" (:height %2)) (:file %2)) args outputs)
-        _ (log/debugf "Start exec command... %s" (apply str args))
-        {:keys [exit out err]} (apply shell/sh args)
-        _ (log/debug "Done exec command.")]
-    (check-command-result exit out err)))
+  ;; outputs are an array of output map, e.g. {:file "XXX.png" :height 128} TODO(yangye): use clojure spec
+  (if (every? (comp string? :file) outputs) 
+    (let [args ["ffmpeg" "-y" "-ss" (str time) "-i" source-url]
+          args (reduce #(conj %1 "-vframes" "1" "-filter:v" (str "scale=-1:" (:height %2)) (:file %2)) args outputs)
+          _ (log/debugf "Start exec command... %s" (apply str args))
+          {:keys [exit out err]} (apply shell/sh args)
+          _ (log/debug "Done exec command.")]
+      (check-command-result exit out err))
+    (throw (ex-info "video-thumbnailize invalid outputs param: file is not string" {:outputs outputs}))))
 
 ;;==================Transcode===========
 (defn transcode
