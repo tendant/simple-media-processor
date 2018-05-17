@@ -54,7 +54,7 @@
 
 (defn ffprobe
   [source-url]
-  (let [cmd ["ffprobe" "-show_format" "-show_streams" "-print_format" "json" source-url]
+  (let [cmd ["/app/ffprobe" "-show_format" "-show_streams" "-print_format" "json" source-url]
         _ (log/debugf "Start exec command... %s" (clojure.string/join " " cmd))
         r (apply shell/sh cmd)
         _ (log/debug "Done exec command.")
@@ -84,7 +84,7 @@
   ;; time should base on probed duration
   ;; outputs are an array of output map, e.g. {:file "XXX.png" :height 128} TODO(yangye): use clojure spec
   (if (every? (comp string? :file) outputs) 
-    (let [args ["ffmpeg" "-y" "-ss" (str time) "-i" source-url]
+    (let [args ["/app/ffmpeg" "-y" "-ss" (str time) "-i" source-url]
           args (reduce #(conj %1 "-vframes" "1" "-filter:v" (str "scale=-1:" (:height %2)) (:file %2)) args outputs)
           _ (log/debugf "Start exec command... %s" (clojure.string/join " " args))
           {:keys [exit out err]} (apply shell/sh args)
@@ -104,7 +104,7 @@
                        (> (:channels audio-stream) 2) ;; downmix to 2 channels if there were more
                        (concat ["-ac" "2"])))
         [fmt mime] (output-format video-stream audio-stream)
-        cmd (cond-> ["ffmpeg"
+        cmd (cond-> ["/app/ffmpeg"
                      "-hide_banner"
                      "-loglevel" "warning"
                      "-y" "-i" source-url]
