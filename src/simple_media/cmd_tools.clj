@@ -5,7 +5,9 @@
 
 (defn- check-command-result [exit out err]
   (if (zero? exit)
-    (log/debug "command success" out)
+    (do 
+      (log/debug "command success" out)
+      true)
     (throw (ex-info "command error" {:out out
                                      :err err}))))
 
