@@ -54,8 +54,9 @@
 
 (defn ffprobe
   [source-url]
-  (let [_ (log/debug "Start exec command...")
-        r (shell/sh "ffprobe" "-show_format" "-show_streams" "-print_format" "json" source-url)
+  (let [cmd ["ffprobe" "-show_format" "-show_streams" "-print_format" "json" source-url]
+        _ (log/debugf "Start exec command... %s" (clojure.string/join " " cmd))
+        r (apply shell/sh cmd)
         _ (log/debug "Done exec command.")
         {:keys [exit out err]} r]
     (check-command-result exit out err)
