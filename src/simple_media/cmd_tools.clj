@@ -126,9 +126,10 @@
                                                        "-threads" "1"])
                     (not (nil? audio-stream)) (concat ["-map" (str "0:" (:index audio-stream))] (if (use-original-audio? audio-stream)
                                                                                                   ["-c:a" "copy"]
-                                                                                                  (cond-> ["-c:a" "libfdk_aac" "-vbr" "4"]
-                                                                                                          (> (:channels audio-stream) 2) ;; downmix to 2 channels if there were more
-                                                                                                          (concat ["-ac" "2"]))))
+                                                                                                  (cond-> ["-c:a" "libfdk_aac"]
+                                                                                                          (not (nil? video-stream)) (concat ["-vbr" "4"])
+                                                                                                          (nil? video-stream) (concat ["-b:a" "128k"])
+                                                                                                          (> (:channels audio-stream) 2) (concat ["-ac" "2"]))))
                     true (concat ["-movflags" "+faststart" "-f" fmt output-file]))
         _ (log/debugf "Start exec command... %s" (clojure.string/join " " cmd))
         {:keys [exit out err]} (apply shell/sh cmd)
@@ -153,9 +154,10 @@
                                                        "-threads" "1"])
                     (not (nil? audio-stream)) (concat ["-map" (str "0:" (:index audio-stream))] (if (use-original-audio? audio-stream)
                                                                                                   ["-c:a" "copy"]
-                                                                                                  (cond-> ["-c:a" "libfdk_aac" "-vbr" "4"]
-                                                                                                          (> (:channels audio-stream) 2) ;; downmix to 2 channels if there were more
-                                                                                                          (concat ["-ac" "2"]))))
+                                                                                                  (cond-> ["-c:a" "libfdk_aac"]
+                                                                                                          (not (nil? video-stream)) (concat ["-vbr" "4"])
+                                                                                                          (nil? video-stream) (concat ["-b:a" "128k"])
+                                                                                                          (> (:channels audio-stream) 2) (concat ["-ac" "2"]))))
                     true (concat ["-movflags" "+faststart" "-f" fmt output-file]))
         _ (log/debugf "Start exec command... %s" (clojure.string/join " " cmd))
         {:keys [exit out err]} (apply shell/sh cmd)
