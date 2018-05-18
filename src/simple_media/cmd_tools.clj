@@ -110,11 +110,6 @@
   (let [probe (ffprobe source-url)
         video-stream (get-stream probe "video")
         audio-stream (get-stream probe "audio")
-        audio-opts (if (use-original-audio? audio-stream)
-                     ["-c:a" "copy"]
-                     (cond-> ["-c:a" "libfdk_aac" "-vbr" "4"]
-                       (> (:channels audio-stream) 2) ;; downmix to 2 channels if there were more
-                       (concat ["-ac" "2"])))
         [fmt mime] (output-format video-stream audio-stream)
         cmd (cond-> ["/app/ffmpeg"
                      "-hide_banner"
@@ -129,7 +124,11 @@
                                                        "-level" "4.0"
                                                        "-preset" "ultrafast"
                                                        "-threads" "1"])
-                    (not (nil? audio-stream)) (concat ["-map" (str "0:" (:index audio-stream))] audio-opts)
+                    (not (nil? audio-stream)) (concat ["-map" (str "0:" (:index audio-stream))] (if (use-original-audio? audio-stream)
+                                                                                                  ["-c:a" "copy"]
+                                                                                                  (cond-> ["-c:a" "libfdk_aac" "-vbr" "4"]
+                                                                                                          (> (:channels audio-stream) 2) ;; downmix to 2 channels if there were more
+                                                                                                          (concat ["-ac" "2"]))))
                     true (concat ["-movflags" "+faststart" "-f" fmt output-file]))
         _ (log/debugf "Start exec command... %s" (clojure.string/join " " cmd))
         {:keys [exit out err]} (apply shell/sh cmd)
@@ -138,12 +137,7 @@
 
 (defn transcode-streams
   [source-url video-stream audio-stream output-file height]
-  (let [audio-opts (if (use-original-audio? audio-stream)
-                     ["-c:a" "copy"]
-                     (cond-> ["-c:a" "libfdk_aac" "-vbr" "4"]
-                       (> (:channels audio-stream) 2) ;; downmix to 2 channels if there were more
-                       (concat ["-ac" "2"])))
-        [fmt mime] (output-format video-stream audio-stream)
+  (let [[fmt mime] (output-format video-stream audio-stream)
         cmd (cond-> ["/app/ffmpeg"
                      "-hide_banner"
                      "-loglevel" "warning"
@@ -157,7 +151,11 @@
                                                        "-level" "4.0"
                                                        "-preset" "ultrafast"
                                                        "-threads" "1"])
-                    (not (nil? audio-stream)) (concat ["-map" (str "0:" (:index audio-stream))] audio-opts)
+                    (not (nil? audio-stream)) (concat ["-map" (str "0:" (:index audio-stream))] (if (use-original-audio? audio-stream)
+                                                                                                  ["-c:a" "copy"]
+                                                                                                  (cond-> ["-c:a" "libfdk_aac" "-vbr" "4"]
+                                                                                                          (> (:channels audio-stream) 2) ;; downmix to 2 channels if there were more
+                                                                                                          (concat ["-ac" "2"]))))
                     true (concat ["-movflags" "+faststart" "-f" fmt output-file]))
         _ (log/debugf "Start exec command... %s" (clojure.string/join " " cmd))
         {:keys [exit out err]} (apply shell/sh cmd)
