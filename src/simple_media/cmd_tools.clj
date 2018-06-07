@@ -105,37 +105,6 @@
      (throw (ex-info "video-thumbnailize invalid outputs param: file is not string" {:outputs outputs})))))
 
 ;;==================Transcode===========
-(defn transcode
-  [source-url output-file height]
-  (let [probe (ffprobe source-url)
-        video-stream (get-stream probe "video")
-        audio-stream (get-stream probe "audio")
-        [fmt mime] (output-format video-stream audio-stream)
-        cmd (cond-> ["/app/ffmpeg"
-                     "-hide_banner"
-                     "-loglevel" "warning"
-                     "-y" "-i" source-url]
-                    (not (nil? video-stream)) (concat ["-map" (str "0:" (:index video-stream))
-                                                       "-vf" (str "scale=-2:" height)
-                                                       "-sws_flags" "bilinear"
-                                                       "-force_key_frames" (str "expr:gte(t,n_forced)")
-                                                       "-c:v" "libx264"
-                                                       "-profile:v" "high"
-                                                       "-level" "4.0"
-                                                       "-preset" "ultrafast"
-                                                       "-threads" "1"])
-                    (not (nil? audio-stream)) (concat ["-map" (str "0:" (:index audio-stream))] (if (use-original-audio? audio-stream)
-                                                                                                  ["-c:a" "copy"]
-                                                                                                  (cond-> ["-c:a" "libfdk_aac"]
-                                                                                                          (not (nil? video-stream)) (concat ["-vbr" "4"])
-                                                                                                          (nil? video-stream) (concat ["-b:a" "128k"])
-                                                                                                          (> (:channels audio-stream) 2) (concat ["-ac" "2"]))))
-                    true (concat ["-movflags" "+faststart" "-f" fmt output-file]))
-        _ (log/debugf "Start exec command... %s" (clojure.string/join " " cmd))
-        {:keys [exit out err]} (apply shell/sh cmd)
-        _ (log/debug "Done exec command.")]
-    (check-command-result exit out err)))
-
 (defn transcode-streams
   [source-url video-stream audio-stream output-file height]
   (let [[fmt mime] (output-format video-stream audio-stream)
@@ -163,6 +132,13 @@
         {:keys [exit out err]} (apply shell/sh cmd)
         _ (log/debug "Done exec command.")]
     (check-command-result exit out err)))
+
+(defn transcode
+  [source-url output-file height]
+  (let [probe (ffprobe source-url)
+        video-stream (get-stream probe "video")
+        audio-stream (get-stream probe "audio")]
+    (transcode-streams source-url video-stream audio-stream output-file height)))
 
 
 (defn -main [& args]
