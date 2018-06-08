@@ -3,6 +3,10 @@
             [clojure.java.shell :as shell]
             [clojure.data.json :as json]))
 
+(def ffprobe-location "/app/ffprobe")
+(def ffmpeg-location "/app/ffmpeg")
+(def imagemagick-location "convert")
+
 (defn- check-command-result [exit out err]
   (if (zero? exit)
     (do 
@@ -56,7 +60,7 @@
 
 (defn ffprobe
   [source-url]
-  (let [cmd ["/app/ffprobe" "-show_format" "-show_streams" "-print_format" "json" source-url]
+  (let [cmd [ffprobe-location "-show_format" "-show_streams" "-print_format" "json" source-url]
         _ (log/debugf "Start exec command... %s" (clojure.string/join " " cmd))
         r (apply shell/sh cmd)
         _ (log/debug "Done exec command.")
@@ -70,7 +74,7 @@
   ;; filters are an array of filter map, e.g. {:tag "crop"}
   ;; outputs are an array of output map, e.g. {:file "XXX.png" :height 128} TODO(yangye): use clojure spec
   (if (every? (comp string? :file) outputs)
-    (let [args ["convert" (str source-url "[0]") "-auto-orient"]
+    (let [args [imagemagick-location (str source-url "[0]") "-auto-orient"]
           args (reduce apply-filter args filters)
           args (conj args "+write" "mpr:IN" "-quality" "80" "-background" "#ffffff")
           args (reduce #(conj %1 "(" "mpr:IN" "-thumbnail" (str "x" (:height %2)) "-strip" "-write" (:file %2) ")") args outputs)
@@ -86,7 +90,7 @@
    ;; time should base on probed duration
    ;; outputs are an array of output map, e.g. {:file "XXX.png" :height 128} TODO(yangye): use clojure spec
    (if (every? (comp string? :file) outputs) 
-     (let [args ["/app/ffmpeg" "-y" "-ss" (str time) "-i" source-url]
+     (let [args [ffmpeg-location "-y" "-ss" (str time) "-i" source-url]
            args (reduce #(conj %1 "-vframes" "1" "-filter:v" (str "scale=-1:" (:height %2)) (:file %2)) args outputs)
            _ (log/debugf "Start exec command... %s" (clojure.string/join " " args))
            {:keys [exit out err]} (apply shell/sh args)
@@ -96,7 +100,7 @@
   ;; first-frame as thumbnail
   ([source-url outputs]
    (if (every? (comp string? :file) outputs) 
-     (let [args ["/app/ffmpeg" "-y" "-i" source-url]
+     (let [args [ffmpeg-location "-y" "-i" source-url]
            args (reduce #(conj %1 "-vframes" "1" "-filter:v" (str "scale=-1:" (:height %2)) (:file %2)) args outputs)
            _ (log/debugf "Start exec command... %s" (clojure.string/join " " args))
            {:keys [exit out err]} (apply shell/sh args)
@@ -106,39 +110,45 @@
 
 ;;==================Transcode===========
 (defn transcode-streams
-  [source-url video-stream audio-stream output-file height]
-  (let [[fmt mime] (output-format video-stream audio-stream)
-        cmd (cond-> ["/app/ffmpeg"
-                     "-hide_banner"
-                     "-loglevel" "warning"
-                     "-y" "-i" source-url]
-                    (not (nil? video-stream)) (concat ["-map" (str "0:" (:index video-stream))
-                                                       "-vf" (str "scale=-2:" height)
-                                                       "-sws_flags" "bilinear"
-                                                       "-force_key_frames" (str "expr:gte(t,n_forced)")
-                                                       "-c:v" "libx264"
-                                                       "-profile:v" "high"
-                                                       "-level" "4.0"
-                                                       "-preset" "ultrafast"
-                                                       "-threads" "1"])
-                    (not (nil? audio-stream)) (concat ["-map" (str "0:" (:index audio-stream))] (if (use-original-audio? audio-stream)
-                                                                                                  ["-c:a" "copy"]
-                                                                                                  (cond-> ["-c:a" "libfdk_aac"]
-                                                                                                          (not (nil? video-stream)) (concat ["-vbr" "4"])
-                                                                                                          (nil? video-stream) (concat ["-b:a" "128k"])
-                                                                                                          (> (:channels audio-stream) 2) (concat ["-ac" "2"]))))
-                    true (concat ["-movflags" "+faststart" "-f" fmt output-file]))
-        _ (log/debugf "Start exec command... %s" (clojure.string/join " " cmd))
-        {:keys [exit out err]} (apply shell/sh cmd)
-        _ (log/debug "Done exec command.")]
-    (check-command-result exit out err)))
+  ([source-url video-stream audio-stream output-file height watermark]
+   (let [[fmt mime] (output-format video-stream audio-stream)
+         cmd (cond-> [ffmpeg-location
+                      "-hide_banner"
+                      "-loglevel" "warning"
+                      "-y" "-i" source-url]
+                     (not (nil? watermark)) (concat ["-i" watermark
+                                                     "-filter_complex" "overlay=x=(main_w-overlay_w-10):y=(main_h-overlay_h-10)"])
+                     (not (nil? video-stream)) (concat ["-map" (str "0:" (:index video-stream))
+                                                        "-vf" (str "scale=-2:" height)
+                                                        "-sws_flags" "bilinear"
+                                                        "-force_key_frames" (str "expr:gte(t,n_forced)")
+                                                        "-c:v" "libx264"
+                                                        "-profile:v" "high"
+                                                        "-level" "4.0"
+                                                        "-preset" "ultrafast"
+                                                        "-threads" "1"])
+                     (not (nil? audio-stream)) (concat ["-map" (str "0:" (:index audio-stream))] (if (use-original-audio? audio-stream)
+                                                                                                   ["-c:a" "copy"]
+                                                                                                   (cond-> ["-c:a" "libfdk_aac"]
+                                                                                                           (not (nil? video-stream)) (concat ["-vbr" "4"])
+                                                                                                           (nil? video-stream) (concat ["-b:a" "128k"])
+                                                                                                           (> (:channels audio-stream) 2) (concat ["-ac" "2"]))))
+                     true (concat ["-movflags" "+faststart" "-f" fmt output-file]))
+         _ (log/debugf "Start exec command... %s" (clojure.string/join " " cmd))
+         {:keys [exit out err]} (apply shell/sh cmd)
+         _ (log/debug "Done exec command.")]
+     (check-command-result exit out err)))
+  ([source-url video-stream audio-stream output-file height]
+   (transcode-streams source-url video-stream audio-stream output-file height nil)))
 
 (defn transcode
-  [source-url output-file height]
-  (let [probe (ffprobe source-url)
-        video-stream (get-stream probe "video")
-        audio-stream (get-stream probe "audio")]
-    (transcode-streams source-url video-stream audio-stream output-file height)))
+  ([source-url output-file height watermark]
+   (let [probe (ffprobe source-url)
+         video-stream (get-stream probe "video")
+         audio-stream (get-stream probe "audio")]
+     (transcode-streams source-url video-stream audio-stream output-file height watermark)))
+  ([source-url output-file height]
+   (transcode source-url output-file height nil)))
 
 
 (defn -main [& args]
@@ -154,6 +164,7 @@
                 (throw (IllegalArgumentException. "Missing parameters: source-url")))
       "transcode" (case (count args)
                     4 (transcode (nth args 1) (nth args 2) (last args))
-                    (throw (IllegalArgumentException. "Missing parameters: source-url output-file height")))
+                    5 (transcode (nth args 1) (nth args 2) (nth args 3) (last args))
+                    (throw (IllegalArgumentException. "Missing parameters: source-url output-file height watermark(optional)")))
       (throw (IllegalArgumentException. (format "Illegal tool name: %s%n" tool)))))
   (println "Done transcode tools"))
