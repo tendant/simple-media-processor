@@ -68,6 +68,12 @@
     (check-command-result exit out err)
     (json/read-str out :key-fn keyword)))
 
+(defn identify
+  [source-url]
+  (let [cmd ["identify" source-url]
+        result (apply shell/sh cmd)]
+    result))
+
 ;;==================Thumbnails===========
 (defn image-thumbnailize
   [source-url filters outputs]
