@@ -65,8 +65,9 @@
         r (apply shell/sh cmd)
         _ (log/debug "Done exec command.")
         {:keys [exit out err]} r]
-    (check-command-result exit out err)
-    (json/read-str out :key-fn keyword)))
+    (if (zero? exit) 
+      (json/read-str out :key-fn keyword)
+      (log/warnf "ffprobe command error: %s" err))))
 
 (defn identify
   [source-url]
