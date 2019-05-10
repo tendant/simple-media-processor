@@ -123,27 +123,27 @@
                       "-hide_banner"
                       "-loglevel" "warning"
                       "-y" "-i" source-url]
-                     (not (nil? video-stream)) (-> (#(if (not (nil? watermark))
-                                                       (concat % ["-i" watermark
-                                                                  "-filter_complex" 
-                                                                  (str "[0:v]" (str "scale=-2:" height) "[scaled];"
-                                                                       "[scaled][1:v]" "overlay=x=(main_w-overlay_w-10):y=(main_h-overlay_h-10)" "[out]")
-                                                                  "-map" "[out]"])
-                                                       (concat % ["-map" (str "0:" (:index video-stream))
-                                                                  "-vf" (str "scale=-2:" height)])))
-                                                   (concat ["-sws_flags" "bilinear"
-                                                            "-force_key_frames" (str "expr:gte(t,n_forced)")
-                                                            "-c:v" "libx264"
-                                                            "-profile:v" "high"
-                                                            "-level" "4.0"
-                                                            "-preset" "ultrafast"
-                                                            "-threads" "1"]))
-                     (not (nil? audio-stream)) (concat ["-map" (str "0:" (:index audio-stream))] (if (use-original-audio? audio-stream)
-                                                                                                   ["-c:a" "copy"]
-                                                                                                   (cond-> ["-c:a" "libfdk_aac"]
-                                                                                                           (not (nil? video-stream)) (concat ["-vbr" "4"])
-                                                                                                           (nil? video-stream) (concat ["-b:a" "128k"])
-                                                                                                           (> (:channels audio-stream) 2) (concat ["-ac" "2"]))))
+                     (not (nil? (:codec_name video-stream))) (-> (#(if (not (nil? watermark))
+                                                                     (concat % ["-i" watermark
+                                                                                "-filter_complex" 
+                                                                                (str "[0:v]" (str "scale=-2:" height) "[scaled];"
+                                                                                     "[scaled][1:v]" "overlay=x=(main_w-overlay_w-10):y=(main_h-overlay_h-10)" "[out]")
+                                                                                "-map" "[out]"])
+                                                                     (concat % ["-map" (str "0:" (:index video-stream))
+                                                                                "-vf" (str "scale=-2:" height)])))
+                                                                 (concat ["-sws_flags" "bilinear"
+                                                                          "-force_key_frames" (str "expr:gte(t,n_forced)")
+                                                                          "-c:v" "libx264"
+                                                                          "-profile:v" "high"
+                                                                          "-level" "4.0"
+                                                                          "-preset" "ultrafast"
+                                                                          "-threads" "1"]))
+                     (not (nil? (:codec_name audio-stream))) (concat ["-map" (str "0:" (:index audio-stream))] (if (use-original-audio? audio-stream)
+                                                                                                                 ["-c:a" "copy"]
+                                                                                                                 (cond-> ["-c:a" "libfdk_aac"]
+                                                                                                                         (not (nil? (:codec_name video-stream))) (concat ["-vbr" "4"])
+                                                                                                                         (nil? (:codec_name video-stream)) (concat ["-b:a" "128k"])
+                                                                                                                         (> (:channels audio-stream) 2) (concat ["-ac" "2"]))))
                      true (concat ["-movflags" "+faststart" "-f" fmt output-file]))
          _ (log/debugf "Start exec command... %s" (clojure.string/join " " cmd))
          {:keys [exit out err]} (apply shell/sh cmd)
