@@ -134,6 +134,7 @@
                                                                  (concat ["-sws_flags" "bilinear"
                                                                           "-force_key_frames" (str "expr:gte(t,n_forced)")
                                                                           "-c:v" "libx264"
+                                                                          "-pix_fmt" "yuv420p"
                                                                           "-profile:v" "high"
                                                                           "-level" "4.0"
                                                                           "-preset" "ultrafast"
