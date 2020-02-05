@@ -1,4 +1,4 @@
-(defproject simple-media-prcoessor "0.1.13"
+(defproject simple-media-prcoessor "0.1.14"
   :description "FIXME: write description"
   :url "http://example.com/FIXME"
   :license {:name "Eclipse Public License"
