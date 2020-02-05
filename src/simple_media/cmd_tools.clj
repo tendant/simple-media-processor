@@ -1,11 +1,13 @@
 (ns simple-media.cmd-tools
   (:require [taoensso.timbre :as log]
             [clojure.java.shell :as shell]
-            [clojure.data.json :as json]))
+            [clojure.data.json :as json]
+            [config.core :refer [env]]
+            ))
 
-(def ffprobe-location "/app/ffprobe")
-(def ffmpeg-location "/app/ffmpeg")
-(def imagemagick-location "convert")
+(def ffprobe-location (or (:ffprobe-location env) "/app/ffprobe"))
+(def ffmpeg-location (or (:ffmpeg-location env) "/app/ffmpeg"))
+(def imagemagick-location (or (:imagemagick-location env) "convert"))
 
 (defn- check-command-result [exit out err]
   (if (zero? exit)

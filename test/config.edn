@@ -1,0 +1,5 @@
+{
+ :ffprobe-location "ffprobe"
+ :ffmpeg-location "ffmpeg"
+ :imagemagick-location "convert"
+}
