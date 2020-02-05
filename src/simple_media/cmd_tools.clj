@@ -5,8 +5,8 @@
             [config.core :refer [env]]
             ))
 
-(def ffprobe-location (or (:ffprobe-location env) "/app/ffprobe"))
-(def ffmpeg-location (or (:ffmpeg-location env) "/app/ffmpeg"))
+(def ffprobe-location (or (:ffprobe-location env) "ffprobe"))
+(def ffmpeg-location (or (:ffmpeg-location env) "ffmpeg"))
 (def imagemagick-location (or (:imagemagick-location env) "convert"))
 
 (defn- check-command-result [exit out err]
