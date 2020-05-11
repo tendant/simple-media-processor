@@ -96,7 +96,7 @@
 
 (defn video-thumbnailize
   ([source-url time outputs]
-   ;; time should base on probed duration
+   ;; time (in seconds) should base on probed duration
    ;; outputs are an array of output map, e.g. {:file "XXX.png" :height 128} TODO(yangye): use clojure spec
    (if (every? (comp string? :file) outputs) 
      (let [args [ffmpeg-location "-y" "-ss" (str time) "-i" source-url]
