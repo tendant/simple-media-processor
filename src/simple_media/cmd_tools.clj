@@ -143,7 +143,7 @@
                                                                           "-threads" "1"]))
                      (not (nil? (:codec_name audio-stream))) (concat ["-map" (str "0:" (:index audio-stream))] (if (use-original-audio? audio-stream)
                                                                                                                  ["-c:a" "copy"]
-                                                                                                                 (cond-> ["-c:a" "libfdk_aac"]
+                                                                                                                 (cond-> ["-c:a" "aac"]
                                                                                                                          (not (nil? (:codec_name video-stream))) (concat ["-vbr" "4"])
                                                                                                                          (nil? (:codec_name video-stream)) (concat ["-b:a" "128k"])
                                                                                                                          (> (:channels audio-stream) 2) (concat ["-ac" "2"]))))
