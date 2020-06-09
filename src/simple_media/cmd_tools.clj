@@ -69,7 +69,9 @@
         {:keys [exit out err]} r]
     (if (zero? exit) 
       (json/read-str out :key-fn keyword)
-      (log/warnf "ffprobe command error: %s" err))))
+      (throw (ex-info (format "ffprobe command error: %s" err) {:exit exit
+                                                                :out out
+                                                                :err err})))))
 
 (defn identify
   [source-url]
