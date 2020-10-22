@@ -173,6 +173,14 @@
    (transcode source-url output-file height nil)))
 
 
+(defn m3u8->mp4
+  [source-url output-file]
+  (let [cmd [ffmpeg-location "-i" source-url "-vcodec" "copy" "-acodec" "copy" "-absf" "aac_adtstoasc" output-file]
+        _ (log/debugf "Start exec command... %s" (clojure.string/join " " cmd))
+        {:keys [exit out err]} (apply shell/sh cmd)
+        _ (log/debug "Done exec command.")]
+    (check-command-result exit out err)))
+
 (defn -main [& args]
   (println "Running transcode tools")
   (if (< (count args) 2)
