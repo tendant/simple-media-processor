@@ -181,6 +181,18 @@
         _ (log/debug "Done exec command.")]
     (check-command-result exit out err)))
 
+(defn produce-live-stream
+  [source-url output-file protocol]
+  (let [cmd [ffmpeg-location "-i" source-url
+             "-c:v" "libx264" "-crf" "21" "-preset" "veryfast"
+             "-c:a" "aac" "-b:a" "128k" "-ac" "2"
+             "-f" "hls" "-hls_time" "10" "-hls_playlist_type" "event"
+             output-file]
+        _ (log/debugf "Start exec command... %s" (clojure.string/join " " cmd))
+        {:keys [exit out err]} (apply shell/sh cmd)
+        _ (log/debug "Done exec command.")]
+    (check-command-result exit out err)))
+
 (defn -main [& args]
   (println "Running transcode tools")
   (if (< (count args) 2)
