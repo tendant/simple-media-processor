@@ -7,6 +7,7 @@
 
 (def ffprobe-location (or (:ffprobe-location env) "ffprobe"))
 (def ffmpeg-location (or (:ffmpeg-location env) "ffmpeg"))
+(def identify-location (or (:identify-location env) "identify"))
 (def imagemagick-location (or (:imagemagick-location env) "convert"))
 
 (defn- check-command-result [exit out err]
@@ -75,7 +76,7 @@
 
 (defn identify
   [source-url]
-  (let [cmd ["identify" source-url]
+  (let [cmd [identify-location source-url]
         result (apply shell/sh cmd)]
     result))
 
