@@ -80,6 +80,19 @@
         result (apply shell/sh cmd)]
     result))
 
+(defn image-convert-json
+  [source-url]
+  (let [cmd [imagemagick-location source-url "json:"]
+        _ (log/debugf "Start exec command... %s" (clojure.string/join " " cmd))
+        r (apply shell/sh cmd)
+        _ (log/debug "Done exec command.")
+        {:keys [exit out err]} r]
+    (if (zero? exit)
+      (json/read-str out :key-fn keyword)
+      (throw (ex-info (format "convert json: command error: %s" err) {:exit exit
+                                                                      :out out
+                                                                      :err err})))))
+
 ;;==================Thumbnails===========
 (defn image-thumbnailize
   [source-url filters outputs]
