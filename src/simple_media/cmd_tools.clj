@@ -131,7 +131,22 @@
            {:keys [exit out err]} (apply shell/sh args)
            _ (log/debug "Done exec command.")]
        (check-command-result exit out err))
-     (throw (ex-info "video-thumbnailize invalid outputs param: file is not string" {:outputs outputs})))))
+     (throw (ex-info "video-thumbnailize invalid outputs param: file is not string" {:outputs outputs}))))
+  ([source-url interval height output-prefix]
+   ;; Create a thumbnail with height, every interval seconds of the video
+   ;; https://trac.ffmpeg.org/wiki/Create%20a%20thumbnail%20image%20every%20X%20seconds%20of%20the%20video
+   ;; -vf fps=1/60 img%03d.jpg
+   (let [fps-arg (format "fps=1/%d" interval)
+         height-arg (format "scale=-1:%d" height)
+         filter-arg (format "%s,%s" fps-arg height-arg)
+         output-arg (str output-prefix "%03d.jpg")
+         cmd [ffmpeg-location "-y" "-i" source-url
+              "-vf" filter-arg
+              output-arg]
+         _ (log/debugf "Start exec command... %s" (clojure.string/join " " cmd))
+         {:keys [exit out err]} (apply shell/sh cmd)
+         _ (log/debug "Done exec command.")]
+     (check-command-result exit out err))))
 
 ;;==================Transcode===========
 (defn transcode-streams
