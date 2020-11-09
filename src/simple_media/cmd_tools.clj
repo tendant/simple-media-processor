@@ -250,7 +250,7 @@
 
 ;; https://www.bogotobogo.com/FFMpeg/ffmpeg_select_scene_change_keyframes_tile_Creating_a_mosaic_of_screenshots_from_a_movie.php
 ;; $ ffmpeg -ss 00:00:05 -i YosemiteHDII.webm -frames 1 -vf "select=not(mod(n\,400)),scale=160:120,tile=4x3" tile.png
-(defn- tile-video-by-frame
+(defn tile-video-by-frame
   [source-url output
    {:keys [seek-second frame-interval scale-h tile-x tile-y]
     :or {seek-second "00:00:02"
