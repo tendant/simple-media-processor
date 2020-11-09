@@ -226,6 +226,53 @@
             (check-command-result exit out err))
     nil))
 
+;; https://www.bogotobogo.com/FFMpeg/ffmpeg_select_scene_change_keyframes_tile_Creating_a_mosaic_of_screenshots_from_a_movie.php
+;; $ ffmpeg -i YosemiteHDII.webm -vf select='gt(scene\,0.4)',scale=160:120,tile -frames:v 1 Yosemite_preview.png
+(defn tile-video-by-scene
+  [source-url output
+   {:keys [scene-diff scale-h]
+    :or {scene-diff "0.4"
+         scale-h 64}
+    :as params}]
+  (let [scene-select-arg (str "select=gt(scene" \\ "," scene-diff ")") ;;NOTE: 0.4 might be too high, output file is empty
+        scale-arg (format "scale=-1:%d" scale-h)
+        tile-arg "tile"
+        filter-arg (format "%s,%s,%s" scene-select-arg scale-arg tile-arg)
+        cmd ["ffmpeg" "-y" "-i" source-url
+             "-vf" filter-arg
+             "-frames:v" "1"
+             "-vsync" "vfr"
+             output]
+        _ (log/debugf "Start exec command... %s" (clojure.string/join " " cmd))
+        {:keys [exit out err]} (apply shell/sh cmd)
+        _ (log/debug "Done exec command.")]
+    (check-command-result exit out err)))
+
+;; https://www.bogotobogo.com/FFMpeg/ffmpeg_select_scene_change_keyframes_tile_Creating_a_mosaic_of_screenshots_from_a_movie.php
+;; $ ffmpeg -ss 00:00:05 -i YosemiteHDII.webm -frames 1 -vf "select=not(mod(n\,400)),scale=160:120,tile=4x3" tile.png
+(defn- tile-video-by-frame
+  [source-url output
+   {:keys [seek-second frame-interval scale-h tile-x tile-y]
+    :or {seek-second "00:00:02"
+         frame-interval 400
+         scale-h 64
+         tile-x 4
+         tile-y 3}
+    :as params}]
+  (let [frame-select-arg (str "select=not(mod(n" \\ "," frame-interval "))")
+        scale-arg (format "scale=-1:%d" scale-h)
+        tile-arg (format "tile=%dx%d" tile-x tile-y)
+        filter-arg (format "%s,%s,%s" frame-select-arg scale-arg tile-arg)
+        cmd ["ffmpeg" "-ss" seek-second
+             "-y" "-i" source-url
+             "-frames" "1"
+             "-vf" filter-arg
+             output]
+        _ (log/debugf "Start exec command... %s" (clojure.string/join " " cmd))
+        {:keys [exit out err]} (apply shell/sh cmd)
+        _ (log/debug "Done exec command.")]
+    (check-command-result exit out err)))
+
 (defn -main [& args]
   (println "Running transcode tools")
   (if (< (count args) 2)
