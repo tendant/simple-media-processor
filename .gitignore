@@ -9,3 +9,10 @@ pom.xml.asc
 /.nrepl-port
 .hgignore
 .hg/
+
+# all media
+*.png
+*.jpg
+*.heic
+*.ts
+*.mp4
