@@ -93,6 +93,22 @@
                                                                       :out out
                                                                       :err err})))))
 
+;; https://legacy.imagemagick.org/discourse-server/viewtopic.php?t=28433
+(defn image-max-saturation
+  "Each image is changed to HCL, just the saturation channel, then chopped up into squares 50x50. Each square is scaled down to a single pixel, then we find the lightest one (ie the most saturated), and we print that saturation, on a scale of 0.0 to 1.0.
+   A good default for B&W vs Color is 0.5."
+  [source-url]
+  (let [cmd [imagemagick-location source-url "-colorspace" "HCL" "-channel" "G" "-separate" "-crop" "50x50" "+repage" "-scale" "1x1!" "-background" "Black" "-compose" "Lighten" "-layers" "merge" "-format" "\"%[fx:mean]\"" "info:"]
+        _ (log/debugf "Start exec command... %s" (clojure.string/join " " cmd))
+        r (apply shell/sh cmd)
+        _ (log/debug "Done exec command.")
+        {:keys [exit out err]} r]
+    (if (zero? exit)
+      (json/read-str out :key-fn keyword)
+      (throw (ex-info (format "convert json: command error: %s" err) {:exit exit
+                                                                      :out out
+                                                                      :err err})))))
+
 ;;==================Thumbnails===========
 (defn image-thumbnailize
   [source-url filters outputs]
